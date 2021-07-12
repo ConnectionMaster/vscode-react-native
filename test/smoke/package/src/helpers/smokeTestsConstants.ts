@@ -3,7 +3,7 @@
 
 import * as os from "os";
 import { join } from "path";
-const XDL = require("@expo/xdl");
+const XDLFsCache = require("xdl/build/tools/FsCache");
 
 export class SmokeTestsConstants {
     // Default code of android platform version which is being targeted during the tests.
@@ -18,26 +18,30 @@ export class SmokeTestsConstants {
     // Expo application cache for iOS platform
     public static iOSExpoAppsCacheDir = join(os.homedir(), ".expo", "ios-simulator-app-cache");
     // Expo versions cache
-    public static ExpoVersionsJsonFilePath = join(XDL.FsCache.getCacheDir(), "versions.json");
+    public static ExpoVersionsJsonFilePath = join(XDLFsCache.getCacheDir(), "versions.json");
     // Timeout for driver to wait for UI elements response to interaction (in seconds)
     public static elementResponseTimeout = 250;
     // Timeout for enabling Remote JS Debugging while testing RN app
     public static enableRemoteJSTimeout = 120 * 1000;
     // Command for stop React Native Packager
     public static stopPackagerCommand = "Stop Packager";
+    // Command for realod React Native application
+    public static reloadAppCommand = "Reload App";
 
     // Timeout for macOS smoke test
     public static macOSTestTimeout = 500 * 1000;
     // Timeout for Windows smoke test
     public static windowsTestTimeout = 700 * 1000;
     // Timeout for Expo testing
-    public static expoTestTimeout = 460 * 1000;
+    public static expoTestTimeout = 700 * 1000;
     // Timeout for iOS testing
     public static iosTestTimeout = 700 * 1000;
     // Timeout for Android testing
     public static androidTestTimeout = 400 * 1000;
     // Timeout for Android testing
     public static hermesTestTimeout = 15 * 60 * 1000;
+    // Timeout for Network inspector testing
+    public static networkInspectorTestTimeout = 10 * 60 * 1000;
     // Timeout for smoke tests setup
     public static smokeTestSetupAwaitTimeout = 30 * 60 * 1000;
 
@@ -90,10 +94,14 @@ export class SmokeTestsConstants {
     public static artifactsDir = "SmokeTestLogs";
     // Name of the VS Code user data directory
     public static VSCodeUserDataDir = "VSCodeUserData";
+    // Name of Express server project directory
+    public static ExpressServerDir = "TestExpressServer";
     // Name of application entry point .js file
     public static AppjsFileName = "App.js";
     // Name of application entry point .tsx file
     public static ApptsxFileName = "App.tsx";
+    // Name of Express server entry point
+    public static ExpressServerFileName = "server.js";
     // Name of file where tests environment variables are stored
     public static EnvConfigFileName = "config.json";
     // Name of file where tests environment variables are stored for development environment
@@ -108,6 +116,8 @@ export class SmokeTestsConstants {
     public static ChromeDebugCoreLogFileName = "ChromeDebugCoreLogs.txt";
     // File name where logs from VS Code driver will be saved
     public static VSCodeDriverLogFileName = "VSCodeDriverLogs.txt";
+    // File name where logs from Network Inspector output channel will be saved
+    public static NetworkInspectorLogFileName = "NetworkInspector.txt";
     // Expo client app Android package name
     public static expoPackageName = "host.exp.exponent";
 }

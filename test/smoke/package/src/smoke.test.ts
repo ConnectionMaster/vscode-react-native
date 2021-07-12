@@ -17,6 +17,7 @@ import { testApplicationSetupManager } from "./main";
 import { startReactNativeTests } from "./nativeDebug.test";
 import { startDebugScenariosCreationTests } from "./debugScenariosCreation.test";
 import { startOtherTests } from "./otherTests.test";
+import { startNetworkInspectorTests } from "./networkInspector.test";
 
 export function startSmokeTests(
     args: TestRunArguments,
@@ -24,11 +25,6 @@ export function startSmokeTests(
     cleanUp: (saveCache: boolean) => Promise<void>,
 ): void {
     before(async function () {
-        if (args.UseCachedApplications) {
-            SmokeTestLogger.info(
-                "*** --use-cache parameter is set, skipping reinstallation of test projects",
-            );
-        }
         if (args.SkipSetup) {
             SmokeTestLogger.info(
                 "*** --skip-setup parameter is set, skipping clean up and apps installation",
@@ -57,23 +53,24 @@ export function startSmokeTests(
             await AppiumHelper.terminateAppium();
         });
 
-        startLocalizationTests(testApplicationSetupManager.getRnWorkspaceDirectory());
-        startDebugScenariosCreationTests(testApplicationSetupManager.getRnWorkspaceDirectory());
+        startLocalizationTests(testApplicationSetupManager.getRnProject());
+        startDebugScenariosCreationTests(testApplicationSetupManager.getRnProject());
 
         SmokeTestLogger.info("*** Smoke tests will be run");
-        startReactNativeTests(testApplicationSetupManager.getRnWorkspaceDirectory(), args);
-        startDirectDebugTests(testApplicationSetupManager.getHermesWorkspaceDirectory(), args);
+        startReactNativeTests(testApplicationSetupManager.getRnProject(), args);
+        startDirectDebugTests(testApplicationSetupManager.getHermesProject(), args);
         startExpoTests(
-            testApplicationSetupManager.getExpoWorkspaceDirectory(),
-            testApplicationSetupManager.getPureRnWorkspaceDirectory(),
+            testApplicationSetupManager.getExpoProject(),
+            testApplicationSetupManager.getPureRnProject(),
             args,
         );
         startDebugMacOSTests(
-            testApplicationSetupManager.getMacOSRnWorkspaceDirectory(),
-            testApplicationSetupManager.getMacOSRnHermesWorkspaceDirectory(),
+            testApplicationSetupManager.getMacOSRnProject(),
+            testApplicationSetupManager.getMacOSRnHermesProject(),
             args,
         );
-        startDebugRNWTests(testApplicationSetupManager.getWindowsRnWorkspaceDirectory(), args);
-        startOtherTests(testApplicationSetupManager.getRnWorkspaceDirectory(), args);
+        startDebugRNWTests(testApplicationSetupManager.getWindowsRnProject(), args);
+        startNetworkInspectorTests(testApplicationSetupManager.getHermesProject(), args);
+        startOtherTests(testApplicationSetupManager.getRnProject(), args);
     });
 }

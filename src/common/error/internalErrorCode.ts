@@ -16,6 +16,8 @@ export enum InternalErrorCode {
     FailedToPublishToExpHost = 111,
     UnsupportedCommandStatus = 112,
     CommandFailedWithDetails = 113,
+    FailedToRunOnWindows = 114,
+    FailedToRunOnMacOS = 115,
 
     // Device Deployer errors
     IOSDeployNotFound = 201,
@@ -68,6 +70,8 @@ export enum InternalErrorCode {
     PackageNotFound = 714,
     ReactDevtoolsIsNotInstalled = 715,
     CancellationTokenTriggered = 716,
+    UnknownError = 717,
+    WorkspaceIsNotTrusted = 718,
 
     // Activation errors
     CouldNotFindLocationOfNodeDebugger = 801,
@@ -87,6 +91,7 @@ export enum InternalErrorCode {
     // Exponent errors
     RNVersionNotSupportedByExponent = 1101,
     UserCancelledExpoLogin = 1102,
+    NgrokIsNotInstalledGlobally = 1103,
 
     // Android errors
     AndroidCouldNotInstallTheAppOnAnyAvailibleDevice = 1201,
@@ -100,6 +105,7 @@ export enum InternalErrorCode {
 
     // Windows Phone errors
     WinRNMPPluginIsNotInstalled = 1301,
+    WinRunCommandFailed = 1302,
 
     // Debugger errors
     SourcesStoragePathIsNullOrEmpty = 1401,
@@ -116,4 +122,8 @@ export enum InternalErrorCode {
 
     // CDP Proxy errors
     CouldNotConnectToDebugTarget = 1501,
+
+    // Network Inspector errors
+    CouldNotStartNetworkInspector = 1601,
+    CouldNotStopNetworkInspector = 1602,
 }

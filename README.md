@@ -51,6 +51,8 @@ Using this extension, you can **debug your code and quickly run `react-native` c
   - [Setting up the React Native packager](#setting-up-the-react-native-packager)
   - [Change project root](#change-project-root)
   - [Configure an Android LogCat Monitor](#configure-an-android-logcat-monitor)
+  - [Configure dependencies versions for debugging Expo projects](#configure-dependencies-versions-for-debugging-expo-projects)
+- [Network Inspector](#network-inspector)
 - [Developing inside a Docker Container](#developing-inside-a-docker-container)
 - [Contributing](#contributing)
 - [Known Issues](#known-issues)
@@ -86,7 +88,9 @@ The full list of commands is:
 | Run Android on Device            | Run an Android application on Device. Launch order: check target platform support, load run arguments, start Packager, run app in all connected devices                                                                                    |
 | Run iOS on Simulator             | Run an iOS application on Simulator. Launch order: load run arguments, check target platform support, start Packager, run app in only one connected emulator                                                                               |
 | Run iOS on Device                | Run an iOS application on Device. Launch order: load run arguments, check target platform support, start Packager, run app in only one connected device                                                                                    |
-| Run Expo                         | Run Exponent application. Launch order: login to exponent, load run arguments, start Packager, run app                                                                                                                                     |
+| Run Expo                         | Run an Exponent application. Launch order: login to exponent, load run arguments, start Packager, run app                                                                                                                                  |
+| Run Windows                      | Run a RNW application. Launch order: check target platform support, load run arguments, start Packager, run app                                                                                                                            |
+| Run MacOS                        | Run a RNmacOS application. Launch order: check target platform support, load run arguments, start Packager, run app                                                                                                                        |
 | Start Packager                   | Start Packager in context project workspace folder                                                                                                                                                                                         |
 | Stop Packager                    | Stop Packager                                                                                                                                                                                                                              |
 | Restart Packager                 | Restart Packager                                                                                                                                                                                                                           |
@@ -96,6 +100,8 @@ The full list of commands is:
 | Run Element Inspector            | Load development tools for inspect application UI elements                                                                                                                                                                                 |
 | Run React Native LogCat Monitor  | Creates a LogCat Monitor for the chosen online Android device to see the device LogCat logs. Default filtering arguments: ["*:S", "ReactNative:V", "ReactNativeJS:V"]. [How to configure filtering.](#configure-an-Android-LogCat-Monitor) |
 | Stop React Native LogCat Monitor | Stops an existing LogCat Monitor and removes its output channel                                                                                                                                                                            |
+| Run Network Inspector            | Run [Network inspector](#network-inspector)                                                                                                                                                                                                |
+| Stop Network Inspector           | Stop [Network inspector](#network-inspector)                                                                                                                                                                                               |
 
 # Debugging React Native applications
 
@@ -192,7 +198,7 @@ The extension provides experimental support of iOS direct debugging. See more in
 
 For now the extension supports iOS direct debugging only on real iOS devices.
 
-To be able to debug an iOS app directly, you need to instal [ios-webkit-debug-proxy](https://github.com/google/ios-webkit-debug-proxy):
+To be able to debug an iOS app directly, you need to install [ios-webkit-debug-proxy](https://github.com/google/ios-webkit-debug-proxy):
 
 - Install [HomeBrew](https://brew.sh) on your Mac.
 - Open a Terminal and run `brew install ideviceinstaller ios-webkit-debug-proxy`
@@ -261,7 +267,7 @@ To start debugging in Expo follow these steps:
 
 1. Open your project in VS Code with this extension installed.
 1. Create a debug configuration (as described in [Debugging React Native applications](#debugging-react-native-applications)), select `Debug in Exponent` in the debug drop-down menu, and start debugging
-1. Wait while some dependencies are configured - the extension will install [`Expo Development Library(@expo/xdl)`](https://www.npmjs.com/package/@expo/xdl) when this feature is used for the first time.
+1. Wait while some dependencies are configured - the extension will install [`Expo Development Library(xdl)`](https://www.npmjs.com/package/xdl) when this feature is used for the first time.
 1. If you have not used Exponent on this system before, you will be prompted for an Exponent username and password.
    Exponent account allows you to use Expo cloud services. More info about how it works is available [here](https://docs.expo.io/versions/latest/workflow/how-expo-works/).
    If you have not created an Exponent account, then specifying a new username and password will create one.
@@ -304,31 +310,19 @@ If you want to change your app entrypoint (for example, from `index.js` to `inde
 
 ### How to launch and debug a React Native for Windows application
 
-You can debug UWP and WPF React Native for Windows applications by changing the `platform` in your `launch.json` configuration:
+Before launching and debugging a React Native for Windows application, please make sure that your development environment is configured properly in accordance with [the official system requirements](https://microsoft.github.io/react-native-windows/docs/rnw-dependencies).
 
-- For `UWP` use `windows`:
+You can debug UWP React Native for Windows applications by changing the `platform` in your `launch.json` configuration to `windows`:
 
-  ```json
-  {
-    "name": "Debug UWP",
-    "cwd": "${workspaceFolder}",
-    "type": "reactnative",
-    "request": "launch",
-    "platform": "windows"
-  }
-  ```
-
-- For `WPF` use `wpf`:
-
-  ```json
-  {
-    "name": "Debug WPF",
-    "cwd": "${workspaceFolder}",
-    "type": "reactnative",
-    "request": "launch",
-    "platform": "wpf"
-  }
-  ```
+```json
+{
+  "name": "Debug Windows",
+  "cwd": "${workspaceFolder}",
+  "type": "reactnative",
+  "request": "launch",
+  "platform": "windows"
+}
+```
 
 ### How to attach to a running React Native for Windows application
 
@@ -444,6 +438,7 @@ The following is a list of all the configuration properties the debugger accepts
 | `cwd`                              | The path to the project root folder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `string`   | `${workspaceFolder}`                          |
 | `sourceMaps`                       | Whether to use JavaScript source maps to map the generated bundled code back to its original sources                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `boolean`  | `true`                                        |
 | `sourceMapPathOverrides`           | A set of mappings for rewriting the locations of source files from what the source map says, to their locations on disk. See [Sourcemaps](#sourcemaps) for details                                                                                                                                                                                                                                                                                                                                                                                                                                           | `object`   | n/a                                           |
+| `sourceMapRenames`                 | Whether to use the "names" mapping in sourcemaps. This requires requesting source content, which could slow debugging                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `boolean`  | `false`                                       |
 | `enableDebug`                      | Whether to enable debug mode. If set to "false", an application will be launched without debugging                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `boolean`  | `true`                                        |
 | `webkitRangeMin`, `webkitRangeMax` | Combines to specify the port range that you want the [ios-webkit-debug-proxy](https://github.com/google/ios-webkit-debug-proxy) to use to find the specific device described in the Direct iOS debug configuration                                                                                                                                                                                                                                                                                                                                                                                           | 9223, 9322 |
 | `trace`                            | Logging level in debugger process. May be useful for diagnostics. If set to "Trace" all debugger process logs will be available in `Debug Console` output window                                                                                                                                                                                                                                                                                                                                                                                                                                             | `string`   | `log`                                         |
@@ -453,12 +448,12 @@ The following is a list of all the configuration properties the debugger accepts
 | `localRoot`                        | The local source root that corresponds to the 'remoteRoot'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `string`   | `${workspaceFolder}`                          |
 | `skipFiles`                        | An array of file or folder names, or glob patterns, to skip when debugging                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `array`    | `[]`                                          |
 | `debuggerWorkerUrlPath`            | Path to the app debugger worker to override. For example, if debugger tries to attach to http://localhost:8081/debugger-ui/debuggerWorker.js and you get 404 error from packager output then you may want to change debuggerWorkerUrlPath to another value suitable for your packager (\"debugger-ui\" will be replaced with the value you provide)                                                                                                                                                                                                                                                          | `string`   | `debugger-ui/`                                |
-| `platform`                         | The platform to target. Possible values: `android`, `ios`, `exponent`, `windows`, `wpf`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `string`   | n/a                                           |
+| `platform`                         | The platform to target. Possible values: `android`, `ios`, `exponent`, `windows`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `string`   | n/a                                           |
 | `target`                           | Target to run on. Possible values: `simulator`, `device`, `device=<iOS device name>`, [`<Android emulator/device id>`](https://github.com/react-native-community/cli/blob/master/docs/commands.md#--deviceid-string), `<Android emulator name>`, `<iOS simulator name>`, `<iOS simulator id>`. If the value is `simulator` then the quick pick window will be expanded with the names of the available virtual devices, then the target value in `launch.json` will be changed to the name of the selected virtual device. If you have only one virtual device available, it will be selected automatically. | `string`   | `simulator`                                   |
 | `logCatArguments`                  | Arguments to be used for LogCat (The LogCat output will appear on an Output Channel). It can be an array such as: `[":S", "ReactNative:V", "ReactNativeJS:V"]`                                                                                                                                                                                                                                                                                                                                                                                                                                               | `array`    | `["*:S", "ReactNative:V", "ReactNativeJS:V"]` |
 | `runArguments`                     | Run arguments to be passed to `react-native run-<platform>` command (override all other configuration params)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `array`    | n/a                                           |
 | `launchActivity`                   | The Android activity to be launched for debugging, e.g. it specifies [`--main-activity`](https://github.com/react-native-community/cli/blob/master/docs/commands.md#--main-activity-string) parameter in `react-native` run arguments                                                                                                                                                                                                                                                                                                                                                                        | `string`   | `MainActivity`                                |
-| `expoHostType`                     | The connection type to be used on Expo debugging to communicate with a device or an emulator. Possible values: <ul><li>`tunnel` - allows to deploy and debug an application by means of Expo cloud services</li><li>`lan` - allows to deploy and install an application via your LAN</li><li>`local` - allows to debug an application on an emulator or an Android device without network connection</li></ul>                                                                                                                                                                                               | `string`   | `tunnel`                                      |
+| `expoHostType`                     | The connection type to be used on Expo debugging to communicate with a device or an emulator. Possible values: <ul><li>`tunnel` - allows to deploy and debug an application by means of Expo cloud services</li><li>`lan` - allows to deploy and install an application via your LAN</li><li>`local` - allows to debug an application on an emulator or an Android device without network connection</li></ul>                                                                                                                                                                                               | `string`   | `lan`                                         |
 | `env`                              | Environment variables passed to the debugger and `react-native run-<platform>` command                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `object`   | `{}`                                          |
 | `envFile`                          | Absolute path to a file containing environment variable definitions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `string`   | `${workspaceFolder}/.env`                     |
 | `variant`                          | A variant to be passed to `react-native run-android`, e.g. use `devDebug` to specify `--variant=devDebug`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `string`   | n/a                                           |
@@ -699,6 +694,43 @@ There are two ways to filter your LogCat Monitor output depending on how LogCat 
 
 To have better understanding on how LogCat filtering works take into account that the extension launches LogCat with flag `-s` and then adds user-provided filters as arguments. Please see the [official instruction on how does LogCat filtering works](https://developer.android.com/studio/command-line/logcat#filteringOutput).
 
+## Configure dependencies versions for debugging Expo projects
+
+To debug Expo applications the extension requires additional dependencies, such as `xdl` and `@expo/metro-config`. These packages are installed automatically on the first start of the Expo debugging scenario. You can configure the dependencies versions by setting the `react-native.expo.dependencies.<package name>` parameter in `settings.json`:
+
+```json
+{
+  "react-native.expo.dependencies.xdl": "59.0.42",
+  "react-native.expo.dependencies.metroConfig": "0.1.72"
+}
+```
+
+To enable new versions of the dependencies, it's required to restart VS Code editor. After that the extension will download the new versions of the packages on the next Expo debugging starting.
+
+# Network Inspector
+
+The extension provides `Network inspector` feature to inspect outgoing network traffic in your apps. You can browse all requests being made and their responses in VS Code DevTools console.
+
+![image](images/network-inspector.png)
+
+### Network inspector requirements
+
+Before using the Network inspector, please make sure that your system meets the following requirements:
+
+- `OpenSSL` utility is installed and added to PATH. You can install `OpenSSL` the following way:
+  - Windows: `choco install openssl`
+  - macOS: `brew install openssl`
+  - Linux: `sudo apt-get install openssl`
+- (macOS only) [`idb`](https://fbidb.io/docs/installation/) utility is installed. It's required to interact with iOS physical devices
+
+### Network inspector usage
+
+- To run the Network inspector you can use `Run Network Inspector` Command Palette command</br>
+  When the Network inspector detects a React Native application and connects to it, VS Code DevTools window will be opened automatically. But you can also open it manually, by opening `Help` menu and clicking `Toggle Developer Tools` option. After that you just need to open `Console` tab in DevTools, where network requests will be printed.
+- To stop the Network inspector you can use `Stop Network Inspector` Command Palette command
+
+For now the Network inspector doesn't support Expo applications.
+
 # Developing inside a Docker Container
 
 The extension supports [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview) features on Linux. Please follow the [VS Code official documentation](https://code.visualstudio.com/docs/remote/containers) to setup your environment to use a remote development approach.
@@ -774,6 +806,7 @@ Here is the list of common known issues you may experience while using the exten
 | Can't communicate with socket pipe                                                                         | (Linux only) If you have two workspaces open that only differ in casing, the extension will fail to communicate effectively.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | "Add configuration" button doesn't work when trying to add debug configuration to `launch.json`            | You have to add some json configuration to `launch.json` manually. Please, see ([#985](https://github.com/microsoft/vscode-react-native/issues/985)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Error `None of these files exist: * .vscode/exponentIndex` appears when running React Native apps via Expo | On some project configurations (mostly on macOS) there could be problems with running RN app via Expo for the first time. You can resolve this by explicitly adding `module.exports.watchFolders = ['.vscode'];` to your Metro config. This will help Metro bundler to find the custom entry point generated by the extension needed to work with Expo. For details you can see the issue ([#1327](https://github.com/microsoft/vscode-react-native/issues/1327)).                                                                                                                                                                                                                                                                                                                                |
+| High CPU load notification while starting debugging Expo app                                               | When you start debugging the Expo application you may receive the notification `"The extension 'React Native Tools' took a very long time to complete its last operation and it has prevented other extensions from running"`. The issue occurs because of importing the `xdl` package, which extension uses for debugging Expo applications. The `xdl` package has the large size and some peculiarities of its structure, so it may cause high CPU load.                                                                                                                                                                                                                                                                                                                                        |
 
 [Known-Issues](https://github.com/microsoft/vscode-react-native/issues?q=is%3Aissue+label%3Aknown-issues) provides a complete list of active and resolved issues.
 

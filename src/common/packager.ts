@@ -14,13 +14,16 @@ import { Request } from "./node/request";
 import { ProjectVersionHelper } from "./projectVersionHelper";
 import { PackagerStatusIndicator, PackagerStatus } from "../extension/packagerStatusIndicator";
 import { SettingsHelper } from "../extension/settingsHelper";
+import { AppLauncher } from "../extension/appLauncher";
 import * as path from "path";
 import * as XDL from "../extension/exponent/xdlInterface";
 import * as semver from "semver";
+import * as vscode from "vscode";
 import * as nls from "vscode-nls";
 import { findFileInFolderHierarchy } from "./extensionHelper";
 import { FileSystem } from "./node/fileSystem";
 import { PromiseUtil } from "./node/promise";
+import { CONTEXT_VARIABLES_NAMES } from "./contextVariablesNames";
 nls.config({
     messageFormat: nls.MessageFormat.bundle,
     bundleFormat: nls.BundleFormat.standalone,
@@ -105,7 +108,11 @@ export class Packager {
         return this.projectPath;
     }
 
-    public getPackagerArgs(rnVersion: string, resetCache: boolean = false): Promise<string[]> {
+    public getPackagerArgs(
+        projectRoot: string,
+        rnVersion: string,
+        resetCache: boolean = false,
+    ): Promise<string[]> {
         let args: string[] = ["--port", this.getPort().toString()];
 
         if (resetCache) {
@@ -131,8 +138,8 @@ export class Packager {
                 }
 
                 return this.getExponentHelper()
-                    .getExpPackagerOptions()
-                    .then((options: ExpConfigPackager) => {
+                    .getExpPackagerOptions(projectRoot)
+                    .then((options: ExpMetroConfig) => {
                         Object.keys(options).forEach(key => {
                             args = args.concat([`--${key}`, options[key]]);
                         });
@@ -171,7 +178,7 @@ export class Packager {
                         return this.monkeyPatchOpnForRNPackager(rnVersion);
                     })
                     .then(() => {
-                        return this.getPackagerArgs(rnVersion, resetCache);
+                        return this.getPackagerArgs(this.projectPath, rnVersion, resetCache);
                     })
                     .then(args => {
                         //  There is a bug with launching VSCode editor for file from stack frame in 0.38, 0.39, 0.40 versions:
@@ -179,7 +186,10 @@ export class Packager {
                         //  This bug will be fixed in 0.41
                         const failedRNVersions: string[] = ["0.38.0", "0.39.0", "0.40.0"];
 
-                        let env = process.env;
+                        let env = Object.assign({}, process.env);
+                        // CI="true" env property breaks RN fast refresh feature, so we need to remove it from default env variables
+                        // See more info in the issue https://github.com/microsoft/vscode-react-native/issues/1529
+                        delete env.CI;
                         if (this.runOptions && (this.runOptions.env || this.runOptions.envFile)) {
                             env = GeneralMobilePlatform.getEnvArgument(
                                 env,
@@ -205,17 +215,12 @@ export class Packager {
 
                         let spawnOptions = { env: reactEnv };
 
-                        // Since Expo 37, you must specify the sourceExts parameter so that the packager can load additional files, such as custom fonts:
-                        // (https://github.com/expo/expo-cli/blob/master/packages/xdl/src/Project.ts#L1720).
-                        // Related to https://github.com/microsoft/vscode-react-native/issues/1252
-                        if (this.runOptions && this.runOptions.platform === PlatformType.Exponent) {
-                            const managedExtensions = this.getSourceExtensions();
-
-                            // In order for the arguments to be processed normally, it is necessary to pass an array as an argument
-                            args.push("--sourceExts", <any>managedExtensions);
-                        }
+                        const nodeModulesRoot: string = AppLauncher.getNodeModulesRootByProjectPath(
+                            this.projectPath,
+                        );
 
                         const packagerSpawnResult = new CommandExecutor(
+                            nodeModulesRoot,
                             this.projectPath,
                             this.logger,
                         ).spawnReactPackager(args, spawnOptions);
@@ -237,6 +242,11 @@ export class Packager {
                 if (executedStartPackagerCmd) {
                     this.logger.info(localize("PackagerStarted", "Packager started."));
                     this.packagerStatus = PackagerStatus.PACKAGER_STARTED;
+                    vscode.commands.executeCommand(
+                        "setContext",
+                        CONTEXT_VARIABLES_NAMES.IS_RN_PACKAGER_RUNNING,
+                        true,
+                    );
                 } else {
                     this.logger.info(
                         localize("PackagerIsAlreadyRunning", "Packager is already running."),
@@ -290,6 +300,11 @@ export class Packager {
             })
             .then(() => {
                 this.setPackagerStopStateUI();
+                vscode.commands.executeCommand(
+                    "setContext",
+                    CONTEXT_VARIABLES_NAMES.IS_RN_PACKAGER_RUNNING,
+                    false,
+                );
             });
     }
 
@@ -415,15 +430,20 @@ export class Packager {
             } else {
                 OPN_PACKAGE_NAME = Packager.OPN_PACKAGE_NAME.old;
             }
-            let flatDependencyPackagePath = path.resolve(
+
+            const nodeModulesRoot: string = AppLauncher.getNodeModulesRootByProjectPath(
                 this.projectPath,
+            );
+
+            let flatDependencyPackagePath = path.resolve(
+                nodeModulesRoot,
                 Packager.NODE_MODULES_FODLER_NAME,
                 OPN_PACKAGE_NAME,
                 Packager.OPN_PACKAGE_MAIN_FILENAME,
             );
 
             let nestedDependencyPackagePath = path.resolve(
-                this.projectPath,
+                nodeModulesRoot,
                 Packager.NODE_MODULES_FODLER_NAME,
                 Packager.REACT_NATIVE_PACKAGE_NAME,
                 Packager.NODE_MODULES_FODLER_NAME,
@@ -511,7 +531,12 @@ export class Packager {
 
     private killPackagerProcess(): Promise<void> {
         this.logger.info(localize("StoppingPackager", "Stopping Packager"));
-        return new CommandExecutor(this.projectPath, this.logger)
+
+        const nodeModulesRoot: string = AppLauncher.getNodeModulesRootByProjectPath(
+            this.projectPath,
+        );
+
+        return new CommandExecutor(nodeModulesRoot, this.projectPath, this.logger)
             .killReactPackager(this.packagerProcess)
             .then(() => {
                 this.packagerProcess = undefined;
@@ -548,28 +573,5 @@ export class Packager {
         }
 
         return atomScript;
-    }
-
-    // Since Expo 37, the packager in expo scripts has stopped correctly finding additional resources, such as custom fonts.
-    // In order to solve this problem, you need to configure the packager to work with additional file extensions,
-    // similar to how it was done in `expo/xdl`
-    private getSourceExtensions(): Array<string> {
-        // Since the array is determined by parameters (as pointed by link below)
-        // (https://github.com/expo/expo-cli/blob/master/packages/xdl/src/Project.ts#L1719),
-        // which are always the same, since the array that we receive in `expo/xdl`
-        // (https://github.com/expo/expo-cli/blob/30844f1083d0b0804478a7dc6c7cbd19dc7254df/packages/config/src/paths/extensions.ts#L54)
-        // is always the same, return constant here
-        return [
-            "expo.ts",
-            "expo.tsx",
-            "expo.js",
-            "expo.jsx",
-            "ts",
-            "tsx",
-            "js",
-            "jsx",
-            "json",
-            "wasm",
-        ];
     }
 }
